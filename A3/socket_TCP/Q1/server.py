@@ -10,7 +10,7 @@ ADDR, PORT = '127.0.0.1', 55555
 def send_message(conn, message):
     conn.send(message).encode('utf-8')
 
-def handle(conn):
+def handle(conn, addr):
     while True:
         message = conn.recv().decode('utf-8')
         command, *arg = message.split()
@@ -28,14 +28,18 @@ def handle(conn):
                 send_message('ERROR')
 
         elif command == 'GETFILES':
-            file_list = filter(os.isfile(), os.listdir(path='.'))
+            file_list = list(filter(os.isfile(), os.listdir(path='.')))
             response = f'{len(file_list)}\n'
-            for file in file_list:
-                response += f'{file}\n'
+            for file_ in file_list:
+                response += f'{file_}\n'
             send_message(response)
 
         elif command == 'GETDIRS':
-            pass
+            dir_list = list(filter(os.isdir(), os.listdir(path='.')))
+            response = f'{len(dir_list)}\n'
+            for dir in dir_list:
+                response += f'{dir}\n'
+            send_message(response)
 
         elif command == 'EXIT':
             conn.close()
@@ -43,6 +47,8 @@ def handle(conn):
         
         else:
             send_message('UNKNOWN')
+    
+    print(f'Usuário com ip {addr[0]}:{addr[1]} saiu do servidor.')
 
 def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -56,7 +62,7 @@ def main():
             login = conn.recv().decode('utf-8')
             if login in users:
                 send_message(conn, 'SUCCESS')
-                client_thread = threading.Thread(target=handle, args=(conn,))
+                client_thread = threading.Thread(target=handle, args=(conn, addr))
                 client_thread.start()
             else:
                 send_message(conn, 'ERROR')
