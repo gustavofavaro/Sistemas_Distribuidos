@@ -1,0 +1,5 @@
+PWD: mostra o diretório atual do sistema de arquivos
+CHDIR: modifica o diretório atual do sistema de arquivos
+GETFILES: mostra a lista de arquivos do diretório atual
+GETDIRS: mostra a lista de diretórios do diretório atual
+EXIT: finaliza a conexão
