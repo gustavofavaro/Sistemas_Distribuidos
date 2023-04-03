@@ -50,10 +50,10 @@ def handle(conn, addr):
             break
 
         elif command == 'HELP':
-            send_message(help_message)
+            send_message(conn, help_message)
         
         else:
-            send_message('Comando inválido. Envie "HELP" para listar os comandos disponíveis.')
+            send_message(conn, 'Comando inválido. Envie "HELP" para listar os comandos disponíveis.')
     
     print(f'Usuário com ip {addr[0]}:{addr[1]} saiu do servidor.')
 
