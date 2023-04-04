@@ -45,7 +45,7 @@ def handle(conn, addr):
                     file_size, = struct.unpack('!I', file_info) # ! = big-endian
 
                     # Cria o arquivo no diretório do servidor
-                    file = open(f'./server_files/{filename}', 'wb')
+                    file = open(f'./server_files/{filename}', 'ab')
 
                     # Recebe cada byte e grava no arquivo
                     for _ in range(file_size):
@@ -138,7 +138,7 @@ def handle(conn, addr):
 
                 except:
                     # Captura um erro na leitura do arquivo
-                    write_on_log(f'Erro no GETFILELIST: {e}.')
+                    write_on_log(f'Erro no GETFILE: {e}.')
 
                     # Envia a resposta com código de erro
                     response = struct.pack(
@@ -155,7 +155,7 @@ def handle(conn, addr):
                     2,              # código de resposta
                     4,              # código do comando
                     1,              # código de sucesso
-                    len(file_data)  # número de arquivos
+                    len(file_data)  # tamanho do arquivo
                 )
                 conn.send(response)
 
