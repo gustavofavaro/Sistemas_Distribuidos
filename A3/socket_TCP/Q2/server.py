@@ -1,20 +1,11 @@
-from datetime import datetime
-from zoneinfo import zoneinfo
 import threading
 import socket
 import struct
 import os
+import logging
+import sys
 
-ADDR, PORT = '127.0.0.1', 55556
-
-def write_on_log(message):
-    timezone = zoneinfo('America/Sao_Paulo')
-    datetime_br = datetime.now(timezone)
-    current_datetime = datetime_br.strftime("%D - %H:%M:%S")
-
-    log = open('log.txt', 'a')
-    log.writelines(f'{current_datetime} -- {message}\n')
-    log.close()
+ADDR, PORT = '127.0.0.1', 55555
 
 def handle(conn, addr):
     try:
@@ -25,7 +16,6 @@ def handle(conn, addr):
             # Verifica se não vieram dados para desconectar o usuário e registrar no log 
             if not message_info:
                 conn.close()
-                write_on_log(f'Usuário com endereço {addr[0]}:{addr[1]} desconectou-se.')
                 break
 
             # Desempacota os três dados
@@ -35,19 +25,22 @@ def handle(conn, addr):
             if type != 1: continue
 
             # Recebe o nome do arquivo dado o tamanho recebido anteriormente
-            filename = conn.recv(filename_size).decode('utf-8')
+            # o comando GETFILESLIST não inclui nome do arquivo.
+            if command != 3:
+                filename = conn.recv(filename_size).decode('utf-8')
 
             # ADDFILE: adiciona um arquivo novo.
             if command == 1:
                 try:
                     # Recebe o tamanho do arquivo
-                    file_info = conn.recv(4)
-                    file_size, = struct.unpack('!I', file_info) # ! = big-endian
+                    file_size_bytes = conn.recv(4)
+                    file_size, = struct.unpack('!I', file_size_bytes) # ! = big-endian
 
                     # Cria o arquivo no diretório do servidor
                     file = open(f'./server_files/{filename}', 'ab')
 
                     # Recebe cada byte e grava no arquivo
+                    print(f'Tamanho do arquivo: {file_size}')
                     for _ in range(file_size):
                         file.write(bytes(conn.recv(1)))
                     
@@ -56,7 +49,7 @@ def handle(conn, addr):
                     result = 1
 
                 except Exception as e:
-                    write_on_log(f'Erro no ADDFILE: {e}.')
+                    logging.info(f'Erro no ADDFILE: {e}.')
                     result = 2
 
                 # Estrutura da resposta
@@ -73,12 +66,12 @@ def handle(conn, addr):
                 try:
                     # Remove o arquivo do sistema
                     os.remove(f'./server_files/{filename}')
-                    result = 1
+                    result = int(1)
                     
-                except:
+                except Exception as e:
                     # Captura um erro na remoção
-                    write_on_log(f'Erro no DELETE: {e}.')
-                    result = 2
+                    logging.info(f'Erro no DELETE: {e}.')
+                    result = int(2)
                 
                 # Estrutura da resposta
                 response = struct.pack(
@@ -89,7 +82,7 @@ def handle(conn, addr):
                     )
                 conn.send(response)
             
-            # GETFILELIST: retorna uma lista com o nome dos arquivos.
+            # GETFILESLIST: retorna uma lista com o nome dos arquivos.
             elif command == 3:
                 try:
                     # Recebe a lista de arquivos no diretório
@@ -97,7 +90,7 @@ def handle(conn, addr):
 
                 except Exception as e:
                     # Captura um erro na construção da lista de arquivos
-                    write_on_log(f'Erro no GETFILELIST: {e}.')
+                    logging.info(f'Erro no GETFILELIST: {e}.')
                     
                     # Envia a resposta com código de erro
                     response = struct.pack(
@@ -111,7 +104,7 @@ def handle(conn, addr):
 
                 # Envia a resposta com código de sucesso
                 response = struct.pack(
-                    'BBBH',         # quatro inteiros
+                    'BBBB',         # quatro inteiros
                     2,              # código de resposta
                     3,              # código do comando
                     1,              # código de sucesso
@@ -138,7 +131,7 @@ def handle(conn, addr):
 
                 except:
                     # Captura um erro na leitura do arquivo
-                    write_on_log(f'Erro no GETFILE: {e}.')
+                    logging.info(f'Erro no GETFILE: {e}.')
 
                     # Envia a resposta com código de erro
                     response = struct.pack(
@@ -151,7 +144,7 @@ def handle(conn, addr):
 
                 # Envia a resposta com código de sucesso
                 response = struct.pack(
-                    'BBBH',         # quatro inteiros
+                    '!BBBI',        
                     2,              # código de resposta
                     4,              # código do comando
                     1,              # código de sucesso
@@ -160,23 +153,33 @@ def handle(conn, addr):
                 conn.send(response)
 
                 for i in range(len(file_data)):
-                    conn.send(file_data[i])
+                    conn.send(struct.pack('B', file_data[i]))
+        
+        logging.info(f'Conexão com {addr[0]}:{addr[1]} finalizada.')
 
 
     except Exception as e:
-        write_on_log(f'Erro no handle: {e}.')
-        write_on_log(f'Usuário com endereço {addr[0]}:{addr[1]} desconectou-se.')
+        logging.info(f'Erro no handle: {e}.')
+        exception_type, exception_object, exception_traceback = sys.exc_info()
+        filename = exception_traceback.tb_frame.f_code.co_filename
+        line_number = exception_traceback.tb_lineno
+
+        print("Exception type: ", exception_type)
+        print("File name: ", filename)
+        print("Line number: ", line_number)
+        logging.info(f'Usuário com endereço {addr[0]}:{addr[1]} desconectou-se.')
         conn.close()
 
 def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    log = logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d/%b/%y %H:%M:%S', level=logging.DEBUG)
     
     try:
         sock.bind((ADDR, PORT))
         sock.listen(10)
         while True:
             conn, addr = sock.accept()
-            write_on_log(f'Usuário com endereço {addr[0]}:{addr[1]} conectou-se.')
+            logging.info(f'Usuário com endereço {addr[0]}:{addr[1]} conectou-se.')
             
             client_thread = threading.Thread(target=handle, args=(conn, addr))
             client_thread.start()
