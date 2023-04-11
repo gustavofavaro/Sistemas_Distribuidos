@@ -1,0 +1,2 @@
+CONNECT: conecta ao servidor remoto. Uso: CONNECT <usuário>, <senha>
+EXIT: fecha o programa.
