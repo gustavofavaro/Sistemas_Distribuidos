@@ -1,9 +1,17 @@
+#!/usr/bin/env python3
+#-----------------------------------------------------------------------
+# Autores: Fabricio Flávio Martins Damasceno e Gustavo Sengling Favaro
+# Data de criação: 03/04/2023
+# Data da última atualização: 11/04/2023
+#-----------------------------------------------------------------------
+""" Implementação do cliente da atividade de socket TCP Questão 2 utilizando socket TCP """
+#-----------------------------------------------------------------------
+
 import threading
 import socket
 import struct
 import os
 import logging
-import sys
 
 ADDR, PORT = '127.0.0.1', 55555
 
@@ -40,7 +48,6 @@ def handle(conn, addr):
                     file = open(f'./server_files/{filename}', 'ab')
 
                     # Recebe cada byte e grava no arquivo
-                    print(f'Tamanho do arquivo: {file_size}')
                     for _ in range(file_size):
                         file.write(bytes(conn.recv(1)))
                     
@@ -160,13 +167,7 @@ def handle(conn, addr):
 
     except Exception as e:
         logging.info(f'Erro no handle: {e}.')
-        exception_type, exception_object, exception_traceback = sys.exc_info()
-        filename = exception_traceback.tb_frame.f_code.co_filename
-        line_number = exception_traceback.tb_lineno
 
-        print("Exception type: ", exception_type)
-        print("File name: ", filename)
-        print("Line number: ", line_number)
         logging.info(f'Usuário com endereço {addr[0]}:{addr[1]} desconectou-se.')
         conn.close()
 

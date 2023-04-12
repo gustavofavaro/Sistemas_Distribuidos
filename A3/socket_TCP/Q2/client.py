@@ -1,11 +1,24 @@
+#!/usr/bin/env python3
+#-----------------------------------------------------------------------
+# Autores: Fabricio Flávio Martins Damasceno e Gustavo Sengling Favaro
+# Data de criação: 03/04/2023
+# Data da última atualização: 11/04/2023
+#-----------------------------------------------------------------------
+""" Implementação do cliente da atividade de socket TCP Questão 2 utilizando socket TCP """
+#-----------------------------------------------------------------------
+
 import socket
 import struct
 import sys
 
+# Endereço IP para o servidor
 ADDR, PORT = '127.0.0.1', 55555
 
+# Função que lida com o envio de requisiçoes e recebimento de respostas do cliente
 def handle(sock):
+    # Loop principal
     while True:
+        # Recebe a entrada do usuário e a separa em comando e argumentos
         command, *args = input('> ').split(' ', 1)
 
         # ADDFILE: adiciona um arquivo ao servidor.
@@ -16,6 +29,7 @@ def handle(sock):
                 file_data = file.read()
                 file.close()
                 
+                # Verifica o diretório para pegar somente o nome do arquivo
                 if '/' in args[0]:
                     dirs = args[0].split('/')
                     filename = dirs[-1]
@@ -39,7 +53,6 @@ def handle(sock):
             sock.send(request)
 
             # Envia o arquivo byte a byte
-            print(f'Tamanho do arquivo: {len(file_data)}')
             for i in range(len(file_data)):
                 sock.send(struct.pack('B', file_data[i]))
        
@@ -52,9 +65,9 @@ def handle(sock):
             
             # Informa sucesso ou fracasso da operação.
             if success == 1:
-                print('Deu bom.')
+                print('Operação feita com sucesso')
             else:
-                print('Deu ruim')       
+                print('Operação falhou. Tente novamente')    
             
         # DELETE: remove um arquivo do servidor.
         elif command == 'DELETE':
@@ -78,24 +91,18 @@ def handle(sock):
             
                 # Informa sucesso ou fracasso da operação.
                 if success == 1:
-                    print('Deu bom.')
+                    print('Operação feita com sucesso')
                 else:
-                    print('Deu ruim')
+                    print('Operação falhou. Tente novamente')
 
             except Exception as e:
                 print(f'Erro: {e}.')
-                exception_type, exception_object, exception_traceback = sys.exc_info()
-                filename = exception_traceback.tb_frame.f_code.co_filename
-                line_number = exception_traceback.tb_lineno
-
-                print("Exception type: ", exception_type)
-                print("File name: ", filename)
-                print("Line number: ", line_number)
                 continue
 
-
+        # GETFILESLIST: retorna uma lista com o nome dos arquivos
         elif command == 'GETFILESLIST':
             try:
+                # Envia a requisição.
                 request = struct.pack(
                     'BBB',
                     1,              # código de requisição
@@ -107,6 +114,7 @@ def handle(sock):
                 response_info = sock.recv(3)
                 type, command, success = struct.unpack('BBB', response_info)
 
+                # Ignora a mensagem caso não seja uma resposta.
                 if type != 2: continue
             
                 if success == 1:
@@ -119,9 +127,9 @@ def handle(sock):
                         print(f'    {filename}')
 
                 else:
-                    print('Deu ruim')
+                    print('Operação falhou. Tente novamente')
                     continue
-
+    
             except Exception as e:
                 print(f'Erro: {e}')
                 continue
@@ -129,6 +137,7 @@ def handle(sock):
         # GETFILE: Recebe um arquivo do servidor.
         elif command == 'GETFILE':
             try:
+                # Envia a requisição.
                 request = struct.pack(
                     f'BBB{len(args[0])}s',
                     1,                          # código de requisição
@@ -141,6 +150,7 @@ def handle(sock):
                 response_info = sock.recv(3)
                 type, command, success = struct.unpack('BBB', response_info)
                 
+                # Ignora a mensagem caso não seja uma resposta.
                 if type != 2: continue
                 
                 if success == 1:
@@ -158,7 +168,7 @@ def handle(sock):
                     file.close()
                     
                 else:
-                    print('Deu ruim')
+                    print('Operação falhou. Tente novamente')
                 
             except Exception as e:
                 print(f'Erro: {e}')
@@ -167,7 +177,8 @@ def handle(sock):
         elif command == 'EXIT': 
             sock.close()
             break
-
+        
+        # Ignora entrada vazia.
         elif command == '':
             continue
 
@@ -189,10 +200,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-    # Issues:
-    # Cabeçalho
-    # Comentários
-    # Organizar (funções no handle)
-    # getfilelist
-    # revisar os comando
