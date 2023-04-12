@@ -40,6 +40,13 @@ def handle(conn, addr):
             # ADDFILE: adiciona um arquivo novo.
             if command == 1:
                 try:
+                    # Verificando se o nome do arquivo é válido
+                    if filename == '':
+                        raise Exception('Nome de arquivo inválido.')
+
+                    # Logging
+                    logging.info(f'Usuário {addr[0]}:{addr[1]} adicionando arquivo {filename} ao servidor.')
+
                     # Recebe o tamanho do arquivo
                     file_size_bytes = conn.recv(4)
                     file_size, = struct.unpack('!I', file_size_bytes) # ! = big-endian
@@ -53,6 +60,7 @@ def handle(conn, addr):
                     
                     # Fecha o arquivo e marca operação como bem sucedida
                     file.close()
+                    logging.info(f'Arquivo {filename} adicionado ao servidor.')   
                     result = 1
 
                 except Exception as e:
@@ -71,8 +79,16 @@ def handle(conn, addr):
             # DELETE: remove um arquivo existente.
             elif command == 2:
                 try:
+                    # Verificando se o nome do arquivo é válido
+                    if filename == '':
+                        raise Exception('Nome de arquivo inválido.')
+                    
+                    # Logging
+                    logging.info(f'Usuário {addr[0]}:{addr[1]} removendo o arquivo {filename} do servidor.')
+
                     # Remove o arquivo do sistema
                     os.remove(f'./server_files/{filename}')
+                    logging.info(f'Arquivo {filename} deletado do servidor.')    
                     result = int(1)
                     
                 except Exception as e:
@@ -92,12 +108,15 @@ def handle(conn, addr):
             # GETFILESLIST: retorna uma lista com o nome dos arquivos.
             elif command == 3:
                 try:
+                    # Logging
+                    logging.info(f'Usuário {addr[0]}:{addr[1]} solicitou a lista de arquivos do servidor.')
+                    
                     # Recebe a lista de arquivos no diretório
                     file_list = list(filter(os.path.isfile, os.listdir(path='./server_files')))
 
                 except Exception as e:
                     # Captura um erro na construção da lista de arquivos
-                    logging.info(f'Erro no GETFILELIST: {e}.')
+                    logging.info(f'Erro no GETFILESLIST: {e}.')
                     
                     # Envia a resposta com código de erro
                     response = struct.pack(
@@ -118,7 +137,8 @@ def handle(conn, addr):
                     len(file_list)  # número de arquivos
                 )
                 conn.send(response)
-
+                logging.info(f'Sucesso no GETFILESLIST.')
+                    
                 # Envia os nomes dos arquivos do diretório
                 for file in file_list:
                     file_info = struct.pack(
@@ -132,11 +152,18 @@ def handle(conn, addr):
             # GETFILE: faz download de um arquivo.
             elif command == 4:
                 try:
+                    # Verificando se o nome do arquivo é válido
+                    if filename == '':
+                        raise Exception('Nome de arquivo inválido.')
+                    
+                    # Logging
+                    logging.info(f'Usuário {addr[0]}:{addr[1]} baixando o arquivo {filename} do servidor.')
+
                     file = open(f'./server_files/{filename}', 'rb')
                     file_data = file.read()
                     file.close()
 
-                except:
+                except Exception as e:
                     # Captura um erro na leitura do arquivo
                     logging.info(f'Erro no GETFILE: {e}.')
 
@@ -147,6 +174,7 @@ def handle(conn, addr):
                         4,              # código do comando
                         2               # código de erro
                     )
+                    conn.send(response)
                     continue
 
                 # Envia a resposta com código de sucesso
@@ -162,6 +190,8 @@ def handle(conn, addr):
                 for i in range(len(file_data)):
                     conn.send(struct.pack('B', file_data[i]))
         
+                logging.info(f'Arquivo {filename} baixado com sucesso.')
+
         logging.info(f'Conexão com {addr[0]}:{addr[1]} finalizada.')
 
 

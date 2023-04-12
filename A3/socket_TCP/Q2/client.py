@@ -9,7 +9,6 @@
 
 import socket
 import struct
-import sys
 
 # Endereço IP para o servidor
 ADDR, PORT = '127.0.0.1', 55555
