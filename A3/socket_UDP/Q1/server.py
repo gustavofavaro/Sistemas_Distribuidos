@@ -4,10 +4,11 @@ import struct
 
 ADDR, PORT = '127.0.0.1', 55555
 
-def handle_recv(sock, data, addr):
+def handle_recv(sock):
     while True:
         try:
             data, addr = sock.recvfrom(1024)
+            print(f'Usuário com ip {addr[0]}:{addr[1]} enviou mensagem.')
         except Exception as e:
             print(f'Erro: {e}')
     
@@ -21,6 +22,16 @@ def handle_recv(sock, data, addr):
     # (provavelmente guardar os endereços pra enviar pra todo mundo :p)
 
 def handle_send(sock):
+    # while True:
+    #     try:
+    #         data = input()
+    #         if data == 'EXIT':
+    #             sock.close()
+    #             break
+    #         sock.sendto(data.encode('utf-8'), (ADDR, PORT))
+
+    #     except Exception as e:
+    #         print(f'Erro: {e}')
     pass
 
 def main():
@@ -28,8 +39,15 @@ def main():
     
     try:
         sock.bind((ADDR, PORT))
-        threading.Thread(target = handle_recv, args = (sock)).start()
-        threading.Thread(target = handle_send, args = (sock)).start()
+        threading.Thread(target = handle_recv, args = (sock,)).start()
+        #threading.Thread(target = handle_send, args = (sock,)).start()
+        
+        while True:
+            data = input()
+            if data == 'EXIT':
+                sock.close()
+                break
+            sock.sendto(data.encode('utf-8'), (ADDR, PORT))
 
     except Exception as e:
         print(f'Erro: {e}')

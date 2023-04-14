@@ -14,6 +14,24 @@ def handle_recv(sock):
             print(f'Erro: {e}')
 
 def handle_send(sock):
+    # while True:
+    #     try:
+    #         data = input()
+    #         if data == 'EXIT':
+    #             sock.close()
+    #             break
+    #         sock.sendto(data.encode('utf-8'), (ADDR, PORT))
+
+    #     except Exception as e:
+    #         print(f'Erro: {e}')
+    pass
+    
+def main():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    
+    threading.Thread(target = handle_recv, args = (sock,)).start()
+    #threading.Thread(target = handle_send, args = (sock,)).start()
+
     while True:
         try:
             data = input()
@@ -24,12 +42,6 @@ def handle_send(sock):
 
         except Exception as e:
             print(f'Erro: {e}')
-
-def main():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    
-    threading.Thread(target = handle_recv, args = (sock)).start()
-    threading.Thread(target = handle_send, args = (sock)).start()
 
 if __name__ == '__main__':
     main()
