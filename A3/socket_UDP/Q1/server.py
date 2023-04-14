@@ -4,11 +4,14 @@ import struct
 
 ADDR, PORT = '127.0.0.1', 55555
 
-def handle(data, addr):
+def handle_recv(sock, data, addr):
+    while True:
+        try:
+            data, addr = sock.recvfrom(1024)
+        except Exception as e:
+            print(f'Erro: {e}')
+    
 
-    print(f'Mensagem do cliente: {data}')
-    teste = "teste"
-    sock.sendto(teste.encode('utf-8'), addr)
     # recebe a mensagem recebida
 
     # tratar os dados de acordo com a estrutura
@@ -16,6 +19,8 @@ def handle(data, addr):
     # envia a mensagem recebida
 
     # (provavelmente guardar os endereços pra enviar pra todo mundo :p)
+
+def handle_send(sock):
     pass
 
 def main():
@@ -23,9 +28,8 @@ def main():
     
     try:
         sock.bind((ADDR, PORT))
-        while True:
-            data, addr = sock.recvfrom(1024)
-            handle(data, addr)
+        threading.Thread(target = handle_recv, args = (sock)).start()
+        threading.Thread(target = handle_send, args = (sock)).start()
 
     except Exception as e:
         print(f'Erro: {e}')
