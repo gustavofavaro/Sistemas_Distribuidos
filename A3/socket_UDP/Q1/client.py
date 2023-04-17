@@ -2,6 +2,7 @@ import socket
 import threading
 import struct
 
+# Endereço IP para o servidor.
 ADDR, PORT = '127.0.0.1', 55555
 
 def handle_recv(sock):
