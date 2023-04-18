@@ -1,7 +1,7 @@
 import threading
 import socket
 import struct
-
+import unicodedata
 class Server:
     def __init__(self, nickname, addr, port):
         self.nickname = nickname
@@ -11,6 +11,11 @@ class Server:
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(self.address)
+        self.emoji_dict = {
+            "brand": "Ford",
+            "model": "Mustang",
+            "year": 1964
+        }
 
         self.is_open = True
         threading.Thread(target = self.handle_recv).start()
@@ -39,8 +44,13 @@ class Server:
                     break
 
                 # Mensagem normal ou emoji (as duas mensagens são formato utf-8)
-                if message_type == 1 or message_type == 2:
+                if message_type == 1:
                     print(f'{nickname}: {message}')
+
+                elif message_type == 2:
+                    #emoji = message.strip(":")
+                    print(f'{nickname}:{unicodedata.lookup(message[1:-1])}')
+                    #print('%s: \N{%s}' % (nickname, message))
 
                 # Mensagem é uma URL
                 elif message_type == 3:
@@ -89,7 +99,8 @@ class Server:
     def handle_send(self):
         while True:
 #            try:
-                message, *args = input('> ').split(' ', 1)
+                entire_message = input('> ')
+                message, *args = entire_message.split(' ', 1)
                 if message == 'EXIT':
                     self.is_open = False
                     message_pack = struct.pack(
@@ -120,8 +131,9 @@ class Server:
                     message_type = 6
 
                 # Se a mensagem é um emoji
-                elif message[0] == ':' and message[-1] == ':':
+                elif entire_message[0] == ':' and entire_message[-1] == ':':
                     message_type = 2
+                    message = entire_message
                     # Transforma a mensagem em emoji unicode
                 
                 # Se a mensagem é um link
@@ -131,8 +143,7 @@ class Server:
                 # Caso não se enquadre, mensagem é apenas normal
                 else:
                     message_type = 1
-                    if args:
-                        message = f'{message} {args[0]}'
+                    message = entire_message
 
                 # Codifica tudo
                 message_pack = struct.pack(
@@ -164,7 +175,7 @@ addr = input("Insira seu endereço de IP: ")
 port = input("Insira sua porta: ")
 sv = Server(nickname, addr, int(port))
 
-# recebe a mensagem recebida
+# recebe a mensagem recebida  
 # tratar os dados de acordo com a estrutura
 # envia a mensagem recebida
 # (provavelmente guardar os endereços pra enviar pra todo mundo :p)
