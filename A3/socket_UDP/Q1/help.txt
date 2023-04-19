@@ -1,0 +1,9 @@
+
+CONNECT: Conecta-se a outro cliente (Exemplo: CONNECT localhost:5555)
+DISCONNECT: Se desconecta de um cliente já conectado
+ECHO: Envia e recebe uma mesma mensagem para indicar que o usuário está ativo
+
+Para utilizar emojis, abra e feche uma mensagem utilizando ":" com somente o nome do emoji (Por exemplo :grinning face:)
+
+A lista de emojis utilizáveis pode ser encontrada em:
+https://unicode.org/Public/emoji/13.0/emoji-test.txt
