@@ -53,8 +53,11 @@ class Server:
                         path = '/'
 
                     # Verifica o espaço em disco e compara com o tamanho do arquivo
-                    disk = psutil.disk_usage(path)
-                    if disk.free > file_size:
+                    free_disk_space = psutil.disk_usage(path).free
+                    print(file_size)
+                    print(free_disk_space)
+                    
+                    if free_disk_space > file_size:
                         result = 1
                     else:
                         result = 2
@@ -75,8 +78,10 @@ class Server:
                 # Partes do upload
                 elif command == 2:
                     # os códigos hash SHA-1 sempre vão possuir 20 caracteres 
-                    hash_from_client = data[2:22]
-                    data_chunk = data[22:1046]
+                    hash_from_client_len, = struct.unpack('B', data[2:3])
+                    hash_from_client = data[3:(3+hash_from_client_len)]
+                    data_chunk_len, = struct.unpack('!I', data[(3+hash_from_client_len):(7+hash_from_client_len)])
+                    data_chunk = data[(7+hash_from_client_len):(7+hash_from_client_len+data_chunk_len)]
                     hash_from_server = hashlib.sha1(data_chunk).digest()
 
                     if hash_from_server != hash_from_client:
@@ -97,7 +102,8 @@ class Server:
                 elif command == 3:
                     # recebe o hash do arquivo inteiro e compara com o que o servidor recebeu
                     # responde sucesso ou falha pela comparação de hash, se falhou apagar o arquivo enviado
-                    hash_from_client = data[2:22]
+                    hash_from_client_len, = struct.unpack('B', data[2:3])
+                    hash_from_client = data[3:(3+hash_from_client_len)]
 
                     self.file.close()
                     self.file = open(f'./server_files/{filename}', 'rb')

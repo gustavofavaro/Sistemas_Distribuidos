@@ -51,37 +51,39 @@ def handle(sock, server_addr):
                 if result == 1:
                     file = open(args[0], 'rb')
                     upload_error = False
-                    i = file_size
+
                     while True:
-                        if i == 0:
-                            break
-                        if i < 1024:
-                            chunk = i
-                            i = 0
-                        else:
-                            chunk = 1024
-                            i -= 1024
                         # Lê os próximos pacotes enquanto não houver erro no envio
                         if not upload_error: 
-                            data_chunk = file.read(chunk)
+                            data_chunk = file.read(1024)
 
-                        # Se não houver pedaço do arquivo, o arquivo foi lido por completo
-                        if not data_chunk:
-                            break
+                            # Se não houver pedaço do arquivo, o arquivo foi lido por completo
+                            if not data_chunk:
+                                break
 
                         # Obtém o hash do pedaço
                         chunk_hash = hashlib.sha1(data_chunk).digest()
-
                         # Envio dos pacotes
                         request = struct.pack(
-                            'BB20s1024s',
+                            f'!BBB{len(chunk_hash)}sI{len(data_chunk)}s',
                             1,
                             2,
+                            len(chunk_hash),
                             chunk_hash,
+                            len(data_chunk),
                             data_chunk
                         )
                         sock.sendto(request, server_addr)
-                        time.sleep(0.01)
+                        time.sleep(0.001)
+
+                        # Resultado do envio
+                        response, addr = sock.recvfrom(4)
+                        message_type, command, result = struct.unpack('BBB', response)
+
+                        if result == 2:
+                            upload_error = True
+                        else:
+                            upload_error = False
 
                     # Fim do loop, arquivo terminou de ser enviado
                     # Envio do EOF e código hash do arquivo inteiro para verificação
@@ -89,9 +91,10 @@ def handle(sock, server_addr):
                     print(file_hash)
 
                     request = struct.pack(
-                        'BB20s',
+                        f'BBB{len(file_hash)}s',
                         1,
                         3,
+                        len(file_hash),
                         file_hash,
                     )
                     sock.sendto(request, server_addr)
@@ -100,24 +103,10 @@ def handle(sock, server_addr):
                     response, addr = sock.recvfrom(4)
                     message_type, command, result = struct.unpack('BBB', response)
 
-                    if result == 3:
-                        raise Exception('Servidor está ocupado, aguarde um momento e tente novamente.')
-                    if result == 2:
-                        upload_error = True
-                    else:
-                        upload_error = False
-                    
-                    
-                    # Resultado do envio
-                    response, addr = sock.recvfrom(4)
-                    message_type, command, result = struct.unpack('BBB', response)
-
                     if response == 1:
                         print('Arquivo enviado com sucesso.')
                     elif response == 2:
-                        raise Exception('Erro no envio do arquivo, tente novamente.')
-                    elif response == 3:
-                        raise Exception('Servidor está ocupado, aguarde um momento e tente novamente.')
+                        print('Erro no envio do arquivo, tente novamente.')
                         
 #        except Exception as e:
 #            print(f'Erro: {e}.')
