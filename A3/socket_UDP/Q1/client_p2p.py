@@ -1,21 +1,27 @@
+#!/usr/bin/env python3
+#-----------------------------------------------------------------------
+# Autores: Fabricio Flávio Martins Damasceno e Gustavo Sengling Favaro
+# Data de criação: 04/04/2023
+# Data da última atualização: 18/04/2023
+#-----------------------------------------------------------------------
+""" Implementação do cliente p2p da atividade de socket UDP Questão 1 utilizando socket UDP """
+#-----------------------------------------------------------------------
+
 import threading
 import socket
 import struct
 import unicodedata
+
+# Como é uma conexão Peer-to-Peer, o cliente também age como um servidor
 class Server:
     def __init__(self, nickname, addr, port):
-        self.nickname = nickname
-        self.address = (addr, port)
-        self.connected_users = []
-        self.receiver = None
+        self.nickname = nickname            # Nome deste cliente
+        self.address = (addr, port)         # Endereço deste cliente
+        self.connected_users = []           # Usuários conectados a este cliente
+        self.receiver = None                # Variável para receptor de uma conexão
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(self.address)
-        self.emoji_dict = {
-            "brand": "Ford",
-            "model": "Mustang",
-            "year": 1964
-        }
 
         self.is_open = True
         threading.Thread(target = self.handle_recv).start()
@@ -29,7 +35,7 @@ class Server:
 
     def handle_recv(self):
         while self.is_open:
-#            try:
+            try:
                 # Recebe a mensagem de algum cliente conectado ao servidor
                 data, addr = self.sock.recvfrom(323) # 1 + 1 + 64 + 1 + 255 + 1 (addr)
 
@@ -48,9 +54,12 @@ class Server:
                     print(f'{nickname}: {message}')
 
                 elif message_type == 2:
-                    #emoji = message.strip(":")
-                    print(f'{nickname}:{unicodedata.lookup(message[1:-1])}')
-                    #print('%s: \N{%s}' % (nickname, message))
+                    # Se é um emoji existente o procura na biblioteca unicodedata e imprime
+                    try:
+                        print(f'{nickname}: {unicodedata.lookup(message[1:-1])}')
+                    # Se não, imprime uma mensagem comum
+                    except:
+                        print(f'{nickname}: {message}')
 
                 # Mensagem é uma URL
                 elif message_type == 3:
@@ -93,12 +102,12 @@ class Server:
                 else:
                     self.send_to_connected_users(message_pack, addr)
 
-#            except Exception as e:
-#                print(f'Erro: {e}')
+            except Exception as e:
+                print(f'Erro: {e}')
 
     def handle_send(self):
         while True:
-#            try:
+            try:
                 entire_message = input('> ')
                 message, *args = entire_message.split(' ', 1)
                 if message == 'EXIT':
@@ -120,15 +129,27 @@ class Server:
                 
                 # Setter para determinar o cliente p2p destinatário
                 elif message == 'CONNECT':
+                    addr, port = args[0].split(':')
+                    aux = (addr, int(port))
+                    if aux == self.address:
+                        raise Exception('Endereço dado é igual ao do cliente atual.')
                     message_type = 5
                     addr, port = args[0].split(':')
                     self.receiver = (addr, int(port))
                 
                 # Sinal de desconexão para parar de receber mensagens de um cliente p2p
                 elif message == 'DISCONNECT':
-                    if args[0] != self.receiver:
+                    addr, port = args[0].split(':')
+                    aux = (addr, int(port))
+                    if aux != self.receiver:
                         raise Exception('Endereço dado é diferente do receptor settado para este cliente.')
                     message_type = 6
+
+                # Indica para mostrar o texto de ajuda
+                elif entire_message == 'HELP':
+                    help_file = open('help.txt', 'r')
+                    print(help_file.read(), end='\n')
+                    message_type = 8
 
                 # Se a mensagem é um emoji
                 elif entire_message[0] == ':' and entire_message[-1] == ':':
@@ -166,28 +187,10 @@ class Server:
                 if message_type == 6:
                     self.receiver = None
 
-#            except Exception as e:
-#                pass
-#                #print(f'Erro: {e}')
+            except Exception as e:
+                print(f'Erro: {e}')
 
 nickname = input("Insira o seu nickname: ")
-addr = input("Insira seu endereço de IP: ")
-port = input("Insira sua porta: ")
+addr_inteiro = input("Insira seu endereço de IP e porta: ")
+addr, port = addr_inteiro.split(':')
 sv = Server(nickname, addr, int(port))
-
-# recebe a mensagem recebida  
-# tratar os dados de acordo com a estrutura
-# envia a mensagem recebida
-# (provavelmente guardar os endereços pra enviar pra todo mundo :p)
-
-# - tipo de mensagem [1 byte]
-# - tamanho apelido (tam_apl) [1 byte]
-# - apelido [tam_apl (1 a 64) bytes ]
-# - tamanho mensagem (tam_msg) [1 byte]
-# - mensagem [tam_msg bytes]
-
-# Os tipos de mensagem são:
-# 1: mensagem normal 0x00
-# 2: emoji 0x01
-# 3: URL 0x02
-# 4: ECHO (envia e recebe a mesma mensagem para indicar que usuário está ativo). 0x03
