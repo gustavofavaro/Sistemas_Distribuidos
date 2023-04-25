@@ -46,6 +46,8 @@ class Server:
                     filename = data[3:(3+filename_size)].decode('utf-8')
                     file_size, = struct.unpack('!I', data[(3+filename_size):(3+filename_size+4)])
 
+                    print(f'Arquivo {filename} com tamanho {file_size/1024}kB a ser enviado de {addr[0]}:{addr[1]}')
+
                     # Seta o path do disco de acordo com o sistema operacional
                     if platform.system() == 'Windows':
                         path = 'C:/'
@@ -53,10 +55,7 @@ class Server:
                         path = '/'
 
                     # Verifica o espaço em disco e compara com o tamanho do arquivo
-                    free_disk_space = psutil.disk_usage(path).free
-                    print(file_size)
-                    print(free_disk_space)
-                    
+                    free_disk_space = psutil.disk_usage(path).free   
                     if free_disk_space > file_size:
                         result = 1
                     else:
@@ -84,8 +83,13 @@ class Server:
                     data_chunk = data[(7+hash_from_client_len):(7+hash_from_client_len+data_chunk_len)]
                     hash_from_server = hashlib.sha1(data_chunk).digest()
 
+                    print('chunk')
+                    print(hash_from_server)
+                    print(hash_from_client)
+
                     if hash_from_server != hash_from_client:
                         result = 2
+                        print('n passou\n')
                     else:
                         self.file.write(data_chunk)
                         result = 1
@@ -110,6 +114,7 @@ class Server:
                     file_data = self.file.read()
                     hash_from_server = hashlib.sha1(file_data).digest()
 
+                    print('final')
                     print(hash_from_server)
                     print(hash_from_client)
 

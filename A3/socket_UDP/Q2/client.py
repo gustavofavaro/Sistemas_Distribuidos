@@ -14,13 +14,14 @@ import time
 
 def handle(sock, server_addr):
     while True:
-#        try:
+        try:
             command, *args = input('> ').split(' ')
 
             if command == 'UPLOAD':
                 # Pega o arquivo
                 if '/' in args[0]:
-                    filename = args[0][-1]
+                    path = args[0].split('/')
+                    filename = path[-1]
                 else:
                     filename = args[0]
                 
@@ -63,6 +64,7 @@ def handle(sock, server_addr):
 
                         # Obtém o hash do pedaço
                         chunk_hash = hashlib.sha1(data_chunk).digest()
+                        print(chunk_hash)
                         # Envio dos pacotes
                         request = struct.pack(
                             f'!BBB{len(chunk_hash)}sI{len(data_chunk)}s',
@@ -82,13 +84,12 @@ def handle(sock, server_addr):
 
                         if result == 2:
                             upload_error = True
+                            print('n passou\n')
                         else:
                             upload_error = False
 
                     # Fim do loop, arquivo terminou de ser enviado
                     # Envio do EOF e código hash do arquivo inteiro para verificação
-
-                    print(file_hash)
 
                     request = struct.pack(
                         f'BBB{len(file_hash)}s',
@@ -103,13 +104,13 @@ def handle(sock, server_addr):
                     response, addr = sock.recvfrom(4)
                     message_type, command, result = struct.unpack('BBB', response)
 
-                    if response == 1:
+                    if result == 1:
                         print('Arquivo enviado com sucesso.')
-                    elif response == 2:
+                    elif result == 2:
                         print('Erro no envio do arquivo, tente novamente.')
                         
-#        except Exception as e:
-#            print(f'Erro: {e}.')
+        except Exception as e:
+            print(f'Erro: {e}.')
 
 
 def main():
