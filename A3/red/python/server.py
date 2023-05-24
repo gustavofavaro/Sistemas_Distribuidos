@@ -1,36 +1,7 @@
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
+from db import MovieDatabase
 import threading
 import socket
 import struct
-
-# Tratar erros
-class Database:
-    def __init__(self):
-        uri = open('uri.env', 'r').read()
-        self.client = MongoClient(uri, server_api=ServerApi('1'))
-        self.db = self.client['sample-mflix']
-
-    def insert(self, key, data):
-        # Exemplo de data como um dict: {"name" : "John", "address" : "Rua de sla oq"}
-        self.db[key].insert_one(data)
-
-    def query(self, key, data):
-        return self.db[key].find(data)
-
-    def update(self, key, data, new_data):
-        old_data = self.query(key, data)
-        if len(old_data) > 1:
-            self.db[key].update_many(old_data, new_data)
-        else:
-            self.db[key].update_one(old_data, new_data)
-
-    def remove(self, key, data):
-        to_delete = self.query(key, data)
-        if len(to_delete) > 1:
-            self.db[key].delete_many(to_delete)
-        else:
-            self.db[key].delete_one(to_delete)
 
 class Client:
     def __init__(self, conn, addr):
@@ -86,6 +57,8 @@ size = len(msg)
 socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 socket.bind(('127.0.0.1', 5555))
 socket.listen()
+
+moviedb = MovieDatabase()
 
 while True:
     conn, addr = socket.accept()
