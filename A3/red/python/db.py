@@ -18,11 +18,11 @@ class MovieDatabase:
         new_data = {}
 
         # Cada dado do packed_data é inserido no dict new_data
-        for data in packed_data:
+        for key, data in packed_data:
             # Verifica se a chave é válida para inserção
-            if not self.db.is_valid_key(data[0]):
+            if not self.db.is_valid_key(key):
                 return False
-            new_data[data[0]] = data[1]
+            new_data[key] = data
         
         # Insere o dict na base de dados
         result = self.db.insert_one(new_data)
