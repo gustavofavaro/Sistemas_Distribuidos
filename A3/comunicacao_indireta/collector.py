@@ -1,19 +1,15 @@
-from dotenv import load_dotenv
-import tweepy
-import pika
-import os
-    
-# Carrega variáveis de enviroment para carregar o tweepy
-load_dotenv()
-consumer_key = os.getenv("CONSUMER_KEY")
-consumer_secret = os.getenv("CONSUMER_SECRET")
-access_token = os.getenv("ACCESS_TOKEN")
-access_token_secret = os.getenv("ACCESS_TOKEN_SECRET")
+#!/usr/bin/env python3
+#-----------------------------------------------------------------------
+# Autores: Gustavo Sengling Favaro e Lucas Alexandre Seemund
+# Data de criação: 09/07/2023
+# Data da última atualização: 10/07/2023
+#-----------------------------------------------------------------------
+""" Implementação do coletor de mensagens utilizando uma base de dados e as enviando via RabbitMQ """
+#-----------------------------------------------------------------------
 
-# Realiza a autenticação e ativa a API
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_token_secret)
-api = tweepy.API(auth)
+import pandas as pd
+import time
+import pika
 
 # Configurações do RabbitMQ
 rabbitmq_host = 'localhost'
@@ -22,40 +18,24 @@ rabbitmq_host = 'localhost'
 connection = pika.BlockingConnection(pika.ConnectionParameters(host=rabbitmq_host))
 channel = connection.channel()
 
-def fetch_tweets(keywords):
-    # Trata a entrada de keywords
-    if isinstance(keywords, list):
-        search_query = ' OR '.join(keywords)
-    else:
-        search_query = keywords
-    
-    # Faz a query de tweets baseada nas keywords recebidas
-    tweets = api.search_tweets(q=search_query, count=5)
+# Importando os tweets de um dataset
+df = pd.read_csv('twitter_dataset.csv')
 
-    # Retorna os tweets
-    return tweets
-    
+# Salvando cada tweet do dataset em uma lista
+tweets = []
+for index, row in df.iterrows():
+    tweets.append(f'@{row["Username"]} says:\n"{row["Text"]}"')
+
+count = 0
 # Publicando postagens no RabbitMQ
-def publish_tweet(tweets):
-    for tweet in tweets:
-        channel.basic_publish(exchange='', routing_key='twitter_queue', body=tweet.text)
+for tweet in tweets:
+    channel.basic_publish(exchange='', routing_key='twitter_queue', body=tweet)
+    count += 1
 
-# Keywords de tópicos para adquirir tweets 
-keywords_for_programming = ["python", "java", "C#", "machine learning", "frontend", "backend"],
-keywords_for_football = ["premier league", "bundesliga", "la liga", "brasileirao", "libertadores", "champions league", "world cup"],
-keywords_for_esports = ["league of legends", "csgo", "dota 2", "valorant", "loud", "furia", "navi", "faze", "g2"]
+    # Espera 1 segundo a cada 100 publicações enviadas
+    if count % 50 == 0:
+        print(f'{count} tweets sent.')
+        time.sleep(1)
 
-# Coleta tweets de programação e envia para a queue
-tweets = fetch_tweets(keywords_for_programming)
-publish_tweet(tweets)
-
-# Coleta tweets de futebol e envia para a queue
-tweets = fetch_tweets(keywords_for_football)
-publish_tweet(tweets)
-
-# Coleta tweets de esportes eletrônicos e envia para a queue
-tweets = fetch_tweets(keywords_for_esports)
-publish_tweet(tweets)
-
-# Fecha o canal do RabbitMQ
+# Fechando a conexão
 connection.close()

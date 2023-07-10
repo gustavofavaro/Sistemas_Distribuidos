@@ -1,9 +1,19 @@
+#!/usr/bin/env python3
+#-----------------------------------------------------------------------
+# Autores: Gustavo Sengling Favaro e Lucas Alexandre Seemund
+# Data de criação: 09/07/2023
+# Data da última atualização: 10/07/2023
+#-----------------------------------------------------------------------
+""" Implementação do consumidor de mensagens do twitter utilizando RabbitMQ """
+#-----------------------------------------------------------------------
+
 import pika
 
 # Imprime o tweet no console
 def print_tweet(ch, method, properties, body):
     tweet = body.decode('utf-8')
-    print(f'Assunto: {ch}\n{tweet}\n')
+    topic = method.routing_key
+    print(f'Topic: {topic}\n{tweet}\n')
 
 # Configurações do RabbitMQ
 rabbitmq_host = 'localhost'
@@ -16,7 +26,7 @@ channel = connection.channel()
 while True:
     try:
         # Recebe os tópicos por input
-        wished_topics = input('Insira tópicos que você gostaria de receber tweets a respeito: ').split(', ')
+        wished_topics = input('Inform us what topics you would like to receive tweets about: ').split(', ')
         
         # Conecta aos tópicos recebidos
         for topic in wished_topics:
@@ -32,12 +42,12 @@ while True:
 
 try:
     # Iniciando o consumo de mensagens
-    print("Recebendo mensagens dos tópicos solicitados.")
+    print("Receiving messages...")
     channel.start_consuming()
 
 except KeyboardInterrupt:
     # Capturando o KeyboardInterrupt (Ctrl+C) para sair do loop
-    print("Interrupção de teclado. Encerrando o consumo de mensagens.")
+    print("Keyboard Interrupt: stopping message receiving")
     channel.stop_consuming()
 
 # Fechando a conexão
