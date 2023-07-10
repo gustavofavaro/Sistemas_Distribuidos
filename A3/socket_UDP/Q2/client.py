@@ -64,7 +64,7 @@ def handle(sock, server_addr):
 
                         # Obtém o hash do pedaço
                         chunk_hash = hashlib.sha1(data_chunk).digest()
-                        print(chunk_hash)
+                        #print(chunk_hash)
                         # Envio dos pacotes
                         request = struct.pack(
                             f'!BBB{len(chunk_hash)}sI{len(data_chunk)}s',
@@ -76,7 +76,6 @@ def handle(sock, server_addr):
                             data_chunk
                         )
                         sock.sendto(request, server_addr)
-                        time.sleep(0.001)
 
                         # Resultado do envio
                         response, addr = sock.recvfrom(4)

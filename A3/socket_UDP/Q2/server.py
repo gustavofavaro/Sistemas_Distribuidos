@@ -83,9 +83,9 @@ class Server:
                     data_chunk = data[(7+hash_from_client_len):(7+hash_from_client_len+data_chunk_len)]
                     hash_from_server = hashlib.sha1(data_chunk).digest()
 
-                    print('chunk')
-                    print(hash_from_server)
-                    print(hash_from_client)
+                    #print('chunk')
+                    #print(hash_from_server)
+                    #print(hash_from_client)
 
                     if hash_from_server != hash_from_client:
                         result = 2
